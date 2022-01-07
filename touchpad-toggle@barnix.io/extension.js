@@ -26,6 +26,7 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
+// const Display = Meta.Display;
 
 const _ = ExtensionUtils.gettext;
 
@@ -34,24 +35,53 @@ class Indicator extends PanelMenu.Button {
     _init() {
         super._init(0);
         this._tpSettings = ExtensionUtils.getSettings('org.gnome.desktop.peripherals.touchpad');
-        
-        this.iconbin = new St.Bin();
+        this.tpdKey = 'send-events';
+        this._vKeyboardSettings = ExtensionUtils.getSettings('org.gnome.desktop.a11y.applications');
+        this.skKey = 'screen-keyboard-enabled';
+
+        this.iconbin = new St.Bin({
+            can_focus: true
+        });
         this.panelIcon;
         this._updateIcon();
 		this.actor.add_child(this.iconbin);
 
-        this.connect('button-press-event', () => {
-            this._toggleTouchpad()
-        });
+        // when mouse clicks panel-icon, call my toggler
+        this.connect('button-press-event',() => this._toggleTouchpad());
+        
+        // when finger clicks panel-icon, call my toggler
+        this.connect('touch-event',() => this._toggleTouchpad());
+
+        // when touchpad is overriden by external event, update panel-icon
+        this._tpSettings.connect(`changed::send-events`,() => this._updateIcon());
+        
+        // if screen-keyboard is enabled/disabled, then touchpad should be inversly affected
+        this._vKeyboardSettings.connect(`changed::screen-keyboard-enabled`,() => this._skChange());
+    }
+
+    _touchpadStatus(){
+        log('_touchpadStatus().');
+        var tpStatus = this._tpSettings.get_string(this.tpdKey);
+        return tpStatus;
+    }
+
+    _skChange(){
+        log('_skChange().');
+        var tpStatus = this._vKeyboardSettings.get_boolean(this.skKey);
+        if(tpStatus == true){
+            this._disableTouchpad();
+        }else{
+            this._enableTouchpad();
+        }
     }
 
     _updateIcon(){
         log('_updateIcon().');
         var tpStatus = this._touchpadStatus();
         if(tpStatus == 'enabled'){
-            this._enabledTouchpadIcon()
+            this._enabledTouchpadIcon();
         }else{
-            this._disabledTouchpadIcon()
+            this._disabledTouchpadIcon();
         }
     }
 
@@ -60,19 +90,20 @@ class Indicator extends PanelMenu.Button {
         var tpStatus = this._touchpadStatus();
         if(tpStatus == 'enabled'){
             log('disable_touchpad');
-            this._tpSettings.set_string('send-events', 'disabled');
-            this._disabledTouchpadIcon();
+            this._disableTouchpad();
         }else{
             log('enable_touchpad.');
-            this._tpSettings.set_string('send-events', 'enabled');
-            this._enabledTouchpadIcon();
+            this._enableTouchpad();
         }
     }
 
-    _touchpadStatus(){
-        log('_touchpadStatus().');
-        var tpStatus = this._tpSettings.get_string('send-events');
-        return tpStatus;
+    _enableTouchpad(){
+        this._tpSettings.set_string(this.tpdKey, 'enabled');
+        this._enabledTouchpadIcon();
+    }
+    _disableTouchpad(){
+        this._tpSettings.set_string(this.tpdKey, 'disabled');
+        this._disabledTouchpadIcon();
     }
 
     _enabledTouchpadIcon(){
@@ -94,6 +125,20 @@ class Indicator extends PanelMenu.Button {
         });
         this.iconbin.set_child(this.panelIcon);
     }
+
+    _evalOrientationForTouchpad(){
+        this.mySize = Display.get_size();
+        var width = this.mySize[0];
+        var height = this.mySize[1];
+        if( width > height){
+            log(`width ${width} > height ${height}`)
+            //this._enableTouchpad();
+        }else{
+            log(`width ${width} < height ${height}`)
+            //this._disableTouchpad();
+        }
+    }
+
 });
 
 class Extension {
