@@ -20,13 +20,14 @@
 
 const GETTEXT_DOMAIN = 'touchpad-toggle';
 
-const { GObject, St, Gio, Shell, Meta } = imports.gi;
+const { GObject, St, Gio, Shell, Meta, Clutter } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
-// const Display = Meta.Display;
+const display = global.display;
+// const workspaceManager = global.workspace_manager;
 
 const _ = ExtensionUtils.gettext;
 
@@ -44,19 +45,25 @@ class Indicator extends PanelMenu.Button {
         });
         this.panelIcon;
         this._updateIcon();
-		this.actor.add_child(this.iconbin);
+		this.actor.add_child(this.iconbin);//shows error in log at init time
 
-        // when mouse clicks panel-icon, call my toggler
-        this.connect('button-press-event',() => this._toggleTouchpad());
-        
-        // when finger clicks panel-icon, call my toggler
-        this.connect('touch-event',() => this._toggleTouchpad());
+        // when mouse-click/touch panel-icon, check orientation
+        // and update touchpad appropriatly
+        this.connect('button-press-event',() => this._evalOrientationForTouchpad());
+        this.connect('touch-event',() => this._evalOrientationForTouchpad());
 
         // when touchpad is overriden by external event, update panel-icon
         this._tpSettings.connect(`changed::send-events`,() => this._updateIcon());
         
         // if screen-keyboard is enabled/disabled, then touchpad should be inversly affected
         this._vKeyboardSettings.connect(`changed::screen-keyboard-enabled`,() => this._skChange());
+
+        let seat = null;
+        //let originalGetTouchMode = null;
+        seat = Clutter.get_default_backend().get_default_seat();
+        //originalGetTouchMode = seat.get_touch_mode;
+        seat.get_touch_mode = () => true;
+
     }
 
     _touchpadStatus(){
@@ -100,10 +107,12 @@ class Indicator extends PanelMenu.Button {
     _enableTouchpad(){
         this._tpSettings.set_string(this.tpdKey, 'enabled');
         this._enabledTouchpadIcon();
+        this._vKeyboardSettings.set_boolean(this.skKey, false);//disable Screen-Keyboard
     }
     _disableTouchpad(){
         this._tpSettings.set_string(this.tpdKey, 'disabled');
         this._disabledTouchpadIcon();
+        this._vKeyboardSettings.set_boolean(this.skKey, true);//enable Screen-Keyboard
     }
 
     _enabledTouchpadIcon(){
@@ -127,15 +136,15 @@ class Indicator extends PanelMenu.Button {
     }
 
     _evalOrientationForTouchpad(){
-        this.mySize = Display.get_size();
+        this.mySize = display.get_size();
         var width = this.mySize[0];
         var height = this.mySize[1];
         if( width > height){
             log(`width ${width} > height ${height}`)
-            //this._enableTouchpad();
+            this._enableTouchpad();
         }else{
             log(`width ${width} < height ${height}`)
-            //this._disableTouchpad();
+            this._disableTouchpad();
         }
     }
 

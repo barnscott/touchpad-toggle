@@ -2,8 +2,9 @@
 
 The intent of this extension is to:
 
-- provide a Gnome panel icon-button that user can click on the Panel icon to enable/disable the touchpad
-- automatically disable the touchpad when display if not in regular "landscape" orientation, and sync panel-icon accordingly
+- provide a Gnome panel-icon that displays the touchpad status
+- if user clicks the panel-icon, extension will verify if screen is in landscape or portrait orientations. if the display is in portrait, the touchpad will be disabled. if the display is in landscape, the touchpad will be enabled. 
+- whenever the extention modify's the touchpad status, it inversly modifies the Screen Keyboard. therefore, user can modify the touchpad status also by disabling/enabling the the Screen Keyboard from the Accessibility Menu
 
 
 org.gnome.desktop.peripherals.touchpad send-events
