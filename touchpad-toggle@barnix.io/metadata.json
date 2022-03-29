@@ -3,7 +3,8 @@
   "description": "Quick touchpad on/off toggle",
   "uuid": "touchpad-toggle@barnix.io",
   "shell-version": [
-    "41"
+    "41",
+    "42"
   ],
   "version": 0.1,
   "url": "https://github.com/barnscott/touchpad-toggle"
