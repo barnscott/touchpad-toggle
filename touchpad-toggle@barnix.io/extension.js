@@ -148,6 +148,22 @@ class Indicator extends PanelMenu.Button {
         }
     }
 
+    // PROBLEM WITH "OBVIOUS" ON/OFF METHOD:
+    // A single touch press is triggering multiple touch events (possibly the input refresh-rate is high),
+    // and therefore its impossible to predict if the touchpad status will be on or off
+    // after the the multiple events are triggered.
+    _evalOrientationForTouchpadV1(){
+        var tpStatus = this._touchpadStatus();
+        log(`Status: ${tpStatus}`);
+        if( tpStatus == 'disabled'){
+            log(`Status ${tpStatus}. Enabling touchpad...`)
+            this._enableTouchpad();
+        }else if(tpStatus == 'enabled'){
+            log(`Status ${tpStatus}. Disabling touchpad...`)
+            this._disableTouchpad();
+        }
+    }
+
 });
 
 class Extension {
